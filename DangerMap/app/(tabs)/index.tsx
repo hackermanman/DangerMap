@@ -7,7 +7,6 @@ export default function Index() {
       style={styles.container}
     >
       <Text style={styles.text}>DANGERRA MAP DEMO</Text>
-      <Link href={"/about"} style={styles.button}>ABOUT</Link>
     </View>
   );
 }
