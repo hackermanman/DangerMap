@@ -70,9 +70,15 @@ export default function MapScreen() {
               />
             ))}
           </MapView>
+
           <TouchableOpacity style={styles.reportButton} onPress={() => setModalVisible(true)}>
-            <Text style={styles.reportButtonText}>Report Crime Here</Text>
+            <Text style={styles.reportButtonText}>Report Crime</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity style={styles.naturalDisasterButton} onPress={() => setModalVisible(true)}>
+            <Text style={styles.naturalDisasterButtonText}>Report Disaster</Text>
+          </TouchableOpacity>
+
           <Modal
             animationType="slide"
             transparent={true}
@@ -132,11 +138,25 @@ const styles = StyleSheet.create({
   reportButton: {
     position: 'absolute',
     bottom: 20,
+    right: 20,
     backgroundColor: '#e51513',
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 50,
   },
   reportButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  naturalDisasterButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    backgroundColor: '#7f412d',
+    padding: 15,
+    borderRadius: 50,
+  },
+  naturalDisasterButtonText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
