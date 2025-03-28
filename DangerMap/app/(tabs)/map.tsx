@@ -7,10 +7,12 @@ import { Picker } from '@react-native-picker/picker';
 export default function MapScreen() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [reportedCrimes, setReportedCrimes] = useState<Array<{ latitude: number; longitude: number; type: string; description: string }>>([]);
+  const [reports, setReports] = useState<Array<{ latitude: number; longitude: number; type: string; description: string; category: string; date: string; time: string }>>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [crimeType, setCrimeType] = useState('Theft');
-  const [crimeDescription, setCrimeDescription] = useState('');
+  const [selectedType, setSelectedType] = useState('Theft');
+  const [description, setDescription] = useState('');
+  const [reportCategory, setReportCategory] = useState<'Crime' | 'Disaster'>('Crime');
+  const [viewCategory, setViewCategory] = useState<'All' | 'Crime' | 'Disaster'>('All');
 
   useEffect(() => {
     (async () => {
@@ -25,18 +27,29 @@ export default function MapScreen() {
     })();
   }, []);
 
-  const reportCrime = () => {
+  const submitReport = () => {
     if (!location) return;
-    setReportedCrimes([...reportedCrimes, {
+    const currentDate = new Date();
+    const date = currentDate.toISOString().split('T')[0];
+    const time = currentDate.toTimeString().slice(0, 5);
+
+    setReports([...reports, {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
-      type: crimeType,
-      description: crimeDescription,
+      type: selectedType,
+      description,
+      category: reportCategory,
+      date,
+      time,
     }]);
     setModalVisible(false);
-    setCrimeDescription('');
-    Alert.alert('Crime Reported', 'Thank you for helping keep everyone safe!');
+    setDescription('');
+    Alert.alert(`${reportCategory} Reported`, 'Thank you for your help!');
   };
+
+  const disasterTypes = ['Flood', 'Fire', 'Earthquake', 'Storm', 'Other'];
+
+  const filteredReports = viewCategory === 'All' ? reports : reports.filter(report => report.category === viewCategory);
 
   if (errorMsg) {
     return (
@@ -60,71 +73,68 @@ export default function MapScreen() {
             }}
             showsUserLocation={true}
           >
-            {reportedCrimes.map((crime, index) => (
+            {filteredReports.map((report, index) => (
               <Marker
                 key={index}
-                coordinate={{ latitude: crime.latitude, longitude: crime.longitude }}
-                title={crime.type}
-                description={crime.description}
-                pinColor="red"
+                coordinate={{ latitude: report.latitude, longitude: report.longitude }}
+                title={`${report.category}: ${report.type} (${report.date} ${report.time})`}
+                description={report.description}
+                pinColor={report.category === 'Crime' ? 'red' : 'orange'}
               />
             ))}
           </MapView>
 
-          <TouchableOpacity style={styles.reportButton} onPress={() => setModalVisible(true)}>
+          <View style={styles.toggleView}>
+            {['All', 'Crime', 'Disaster'].map(category => (
+              <TouchableOpacity
+                key={category}
+                style={[styles.toggleButton, viewCategory === category && styles.activeToggle]}
+                onPress={() => setViewCategory(category as 'All' | 'Crime' | 'Disaster')}
+              >
+                <Text style={styles.toggleButtonText}>{category}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity style={styles.reportButton} onPress={() => {
+            setReportCategory('Crime');
+            setSelectedType('Theft');
+            setModalVisible(true);
+          }}>
             <Text style={styles.reportButtonText}>Report Crime</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.naturalDisasterButton} onPress={() => setModalVisible(true)}>
+          <TouchableOpacity style={styles.naturalDisasterButton} onPress={() => {
+            setReportCategory('Disaster');
+            setSelectedType('Flood');
+            setModalVisible(true);
+          }}>
             <Text style={styles.naturalDisasterButtonText}>Report Disaster</Text>
           </TouchableOpacity>
 
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={modalVisible}
-            onRequestClose={() => setModalVisible(false)}
-          >
+          <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
             <View style={styles.modalView}>
-            <Text style={styles.modalTitle}>Report Crime</Text>
-            <Picker
-                selectedValue={crimeType}
-                onValueChange={(itemValue) => setCrimeType(itemValue)}
-                style={styles.picker}
-            >
-                <Picker.Item label="Theft" value="Theft" color="#000" />
-                <Picker.Item label="Assault" value="Assault" color="#000" />
-                <Picker.Item label="Vandalism" value="Vandalism" color="#000" />
-                <Picker.Item label="Suspicious Activity" value="Suspicious Activity" color="#000" />
-                <Picker.Item label="Other" value="Other" color="#000" />
-            </Picker>
-
-              <TextInput
-                style={styles.textInput}
-                placeholder="Describe the incident..."
-                placeholderTextColor="#999"
-                multiline
-                numberOfLines={4}
-                value={crimeDescription}
-                onChangeText={setCrimeDescription}
-              />
-              <TouchableOpacity style={styles.modalButton} onPress={reportCrime}>
-                <Text style={styles.modalButtonText}>Submit Report</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.modalCancelButton} onPress={() => setModalVisible(false)}>
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Report {reportCategory}</Text>
+              <Picker selectedValue={selectedType} onValueChange={(itemValue) => setSelectedType(itemValue)} style={styles.picker}>
+                {(reportCategory === 'Crime' ? ['Theft', 'Assault', 'Vandalism', 'Suspicious Activity', 'Other'] : disasterTypes).map((type) => (
+                  <Picker.Item key={type} label={type} value={type} color="#000" />
+                ))}
+              </Picker>
+              <TextInput style={styles.textInput} placeholder="Describe the incident..." placeholderTextColor="#999" multiline numberOfLines={4} value={description} onChangeText={setDescription} />
+              <TouchableOpacity style={styles.modalButton} onPress={submitReport}><Text style={styles.modalButtonText}>Submit Report</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.modalCancelButton} onPress={() => setModalVisible(false)}><Text style={styles.modalCancelText}>Cancel</Text></TouchableOpacity>
             </View>
           </Modal>
         </>
-      ) : (
-        <Text style={{ color: 'white' }}>Fetching your location...</Text>
-      )}
+      ) : (<Text style={{ color: 'white' }}>SETTING LOCATION</Text>)}
     </View>
   );
 }
 
+
+
 const styles = StyleSheet.create({
+  // Container and Map Styles
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -135,6 +145,30 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
+
+  // Toggle View Styles
+  toggleView: {
+    position: 'absolute',
+    top: 50,
+    flexDirection: 'row',
+    backgroundColor: '#000',
+    borderRadius: 10,
+    padding: 5,
+  },
+  toggleButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  activeToggle: {
+    backgroundColor: '#e51513',
+  },
+  toggleButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+
+  // Report Buttons Styles
   reportButton: {
     position: 'absolute',
     bottom: 20,
@@ -161,6 +195,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+
+  // Modal Styles
   modalView: {
     flex: 1,
     justifyContent: 'center',
