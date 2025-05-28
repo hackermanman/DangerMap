@@ -16,8 +16,17 @@ export default function Index() {
 	const [password, setPassword] = useState('');
 	const [loading, setLoading] = useState(false);
 
-    const signUp = () => {
-
+    const signUp = async () => {
+		setLoading(true);
+		try {
+			await auth().createUserWithEmailAndPassword(email, password);
+			alert('Check your emails!');
+		} catch (e: any) {
+			const err = e as FirebaseError;
+			alert('Registration failed: ' + err.message);
+		} finally {
+			setLoading(false);
+		}
     }
 
     const signIn = () => {
